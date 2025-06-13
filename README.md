@@ -1,4 +1,5 @@
-# Startup_hub  — Your Smart AI-Powered Startup Companion
+# Startup_hub  — Your Smart AI-Powered Startup Companion [Check Project Live](https://startup-hub.onrender.com)
+
 Startup Hub is an all-in-one intelligent platform to explore and analyze startups using cutting-edge AI, live web scraping, and real-time data from SerpAPI. Whether you're an entrepreneur, investor, or researcher, Startup Hub gives you everything you need to search startups, track health metrics, find relevant events, and even interact with an AI assistant — all from a beautifully designed Gradio UI.
 
 🔍 Features
