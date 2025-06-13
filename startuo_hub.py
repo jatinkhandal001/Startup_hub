@@ -226,7 +226,10 @@ with gr.Blocks(theme=gr.themes.Soft(primary_hue="blue", secondary_hue="violet"))
         search_btn_ai.click(ai_search_startup, inputs=[user_query], outputs=[results])
 
 
-    demo.launch()
+    import os
+port = int(os.environ.get("PORT", 7860))
+demo.launch(server_name="0.0.0.0", server_port=port)
+
 
 
 
