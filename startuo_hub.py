@@ -309,4 +309,5 @@ with gr.Blocks(theme=gr.themes.Soft(primary_hue="blue", secondary_hue="violet"))
         tool_output = gr.Textbox(label="Tool Recommendations", lines=7)
         tool_btn.click(recommend_tools, inputs=tool_keywords, outputs=tool_output)
 
-demo.launch()
+demo.launch(server_name="0.0.0.0", server_port=7860)
+
