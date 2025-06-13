@@ -1,4 +1,5 @@
 import gradio as gr
+import os
 import random
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,8 +8,11 @@ from PIL import Image
 import requests
 from bs4 import BeautifulSoup
 
-SERPAPI_KEY = "6f86754981d8fb339eb0f3854ab2e53135763066228cae0d91dd71a1f3b054ab"
-GEMINI_API_KEY = "AIzaSyALWY56WD0gzykmToNHlZbxEXYcCw1Mr_A"
+
+
+SERPAPI_KEY = os.getenv("SERPAPI_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
 
 def search_startup(query):
     try:
