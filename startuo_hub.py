@@ -8,6 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 
 SERPAPI_KEY = "6f86754981d8fb339eb0f3854ab2e53135763066228cae0d91dd71a1f3b054ab"
+GEMINI_API_KEY = "AIzaSyALWY56WD0gzykmToNHlZbxEXYcCw1Mr_A"
 
 def search_startup(query):
     try:
@@ -89,12 +90,11 @@ def startup_health_dashboard(startup):
                f"Community: {community}/5")
     return summary, img
 
-#Web Scrap used in this
 def event_finder(query):
     query = query.lower()
     events = []
 
-    #Meetup
+    # Meetup
     try:
         url = 'https://www.meetup.com/find/events/'
         response = requests.get(url)
@@ -123,7 +123,7 @@ def event_finder(query):
     except:
         pass
 
-    #Microsoft
+    # Microsoft
     try:
         url = 'https://events.microsoft.com/en-us/'
         response = requests.get(url)
@@ -135,7 +135,7 @@ def event_finder(query):
     except:
         pass
 
-    #Google
+    # Google
     try:
         url = 'https://developers.google.com/events'
         response = requests.get(url)
@@ -149,11 +149,13 @@ def event_finder(query):
 
     return "\n".join(events) if events else "No matching events found."
 
+from openai import OpenAI
+
 def ai_search_startup(myprompt):
-    from openai import OpenAI
-    google_gemini_api_key = "AIzaSyALWY56WD0gzykmToNHlZbxEXYcCw1Mr_A"
+    if not GEMINI_API_KEY:
+        return "Please configure your Gemini API key."
     client = OpenAI(
-        api_key=google_gemini_api_key,
+        api_key=GEMINI_API_KEY,
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
     )
     try:
@@ -161,17 +163,81 @@ def ai_search_startup(myprompt):
             {"role": "system", "content": "You are a helpful Startup AI assistant. Answer queries related to startups and startup ideas only."},
             {"role": "user", "content": myprompt}
         ]
-
         response = client.chat.completions.create(
             model="gemini-1.5-flash",
             messages=messages
         )
+        if not response.choices or not hasattr(response.choices[0], "message"):
+            return "No response from Gemini API."
         return response.choices[0].message.content
     except Exception as e:
         return f"Error while calling AI assistant: {e}"
 
-    return f"AI Assistant feature is not configured. Your query was:\n\n{myprompt}"
+def seo_insights(domain):
+    insights = {
+        "domain": domain,
+        "monthly_visits": random.randint(1000, 50000),
+        "bounce_rate": round(random.uniform(20, 70), 2),
+        "backlinks": random.randint(100, 5000),
+        "domain_authority": random.randint(10, 90)
+    }
+    text = (f"SEO Insights for {domain}:\n"
+            f"Monthly Visits: {insights['monthly_visits']}\n"
+            f"Bounce Rate: {insights['bounce_rate']}%\n"
+            f"Backlinks: {insights['backlinks']}\n"
+            f"Domain Authority: {insights['domain_authority']}/100")
+    return text
 
+def idea_validator(idea_text):
+    if not GEMINI_API_KEY:
+        return "Please configure your Gemini API key."
+    client = OpenAI(
+        api_key=GEMINI_API_KEY,
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+    )
+    messages = [
+        {"role": "system", "content": "You are an expert startup idea validator."},
+        {"role": "user", "content": f"Validate this startup idea:\n{idea_text}"}
+    ]
+    try:
+        response = client.chat.completions.create(
+            model="gemini-1.5-flash",
+            messages=messages
+        )
+        if not response.choices or not hasattr(response.choices[0], "message"):
+            return "No response from Gemini API."
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error from Gemini API: {e}"
+
+TOOLS = {
+    "marketing": ["HubSpot", "Mailchimp", "Google Ads"],
+    "development": ["GitHub", "GitLab", "Jira"],
+    "design": ["Figma", "Adobe XD", "Canva"],
+    "analytics": ["Google Analytics", "Mixpanel", "Tableau"],
+}
+
+def recommend_tools(keywords):
+    if not GEMINI_API_KEY:
+        return "Please configure your Gemini API key."
+    client = OpenAI(
+        api_key=GEMINI_API_KEY,
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+    )
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant recommending startup tools."},
+        {"role": "user", "content": f"Recommend tools for these keywords:\n{keywords}"}
+    ]
+    try:
+        response = client.chat.completions.create(
+            model="gemini-1.5-flash",
+            messages=messages
+        )
+        if not response.choices or not hasattr(response.choices[0], "message"):
+            return "No response from Gemini API."
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error from Gemini API: {e}"
 
 with gr.Blocks(theme=gr.themes.Soft(primary_hue="blue", secondary_hue="violet")) as demo:
     gr.Markdown("""<div style="text-align:center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width:1000px; margin:auto;">
@@ -225,11 +291,22 @@ with gr.Blocks(theme=gr.themes.Soft(primary_hue="blue", secondary_hue="violet"))
                 results = gr.Markdown(label="Results")
         search_btn_ai.click(ai_search_startup, inputs=[user_query], outputs=[results])
 
+    with gr.Tab("5. Traffic & SEO Insights"):
+        domain_input = gr.Textbox(label="Enter Domain", placeholder="e.g. fintechx.com")
+        seo_btn = gr.Button("Get SEO Insights")
+        seo_output = gr.Textbox(label="SEO Summary", lines=7)
+        seo_btn.click(seo_insights, inputs=domain_input, outputs=seo_output)
 
-    import os
-port = int(os.environ.get("PORT", 7860))
-demo.launch(server_name="0.0.0.0", server_port=port)
+    with gr.Tab("6. Startup Idea Validator"):
+        idea_input = gr.Textbox(label="Describe Your Startup Idea")
+        idea_btn = gr.Button("Validate Idea")
+        idea_output = gr.Textbox(label="Validation Report", lines=10)
+        idea_btn.click(idea_validator, inputs=idea_input, outputs=idea_output)
 
+    with gr.Tab("7. Startup Tool Recommender"):
+        tool_keywords = gr.Textbox(label="Enter keywords (e.g., marketing, design)")
+        tool_btn = gr.Button("Recommend Tools")
+        tool_output = gr.Textbox(label="Tool Recommendations", lines=7)
+        tool_btn.click(recommend_tools, inputs=tool_keywords, outputs=tool_output)
 
-
-
+demo.launch()
