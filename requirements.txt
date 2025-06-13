@@ -1,1 +1,9 @@
+gradio
+matplotlib
+numpy
+Pillow
+requests
+beautifulsoup4
+google-search-results
+openai
 
