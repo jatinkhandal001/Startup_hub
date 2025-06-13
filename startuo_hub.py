@@ -6,8 +6,8 @@ from io import BytesIO
 from PIL import Image
 import requests
 from bs4 import BeautifulSoup
-# insert serpapi key at 10 or insert gemini api key at 154
-SERPAPI_KEY = "your api key on serp api "
+
+SERPAPI_KEY = "6f86754981d8fb339eb0f3854ab2e53135763066228cae0d91dd71a1f3b054ab"
 
 def search_startup(query):
     try:
@@ -151,7 +151,7 @@ def event_finder(query):
 
 def ai_search_startup(myprompt):
     from openai import OpenAI
-    google_gemini_api_key = "your_gemini_key_insert"
+    google_gemini_api_key = "AIzaSyALWY56WD0gzykmToNHlZbxEXYcCw1Mr_A"
     client = OpenAI(
         api_key=google_gemini_api_key,
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
