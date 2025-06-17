@@ -10,8 +10,8 @@ from bs4 import BeautifulSoup
 
 
 
-SERPAPI_KEY = os.getenv("SERPAPI_KEY")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+SERPAPI_KEY = os.getenv("SERPAPI_KEY")           #Used for google search
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")           #used for gemini as ai startup assistent 
 
 
 def search_startup(query):
