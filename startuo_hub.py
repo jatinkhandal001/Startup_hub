@@ -293,7 +293,18 @@ def recommend_tools(keywords):
 # Gradio UI Setup
 
 with gr.Blocks(theme=gr.themes.Soft(primary_hue="blue", secondary_hue="violet")) as demo:
-    gr.Markdown("### 🚀 Welcome to Startup Hub by Team Falcon 🦅")
+    gr.Markdown("""<div style="text-align:center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width:1000px; margin:auto;">
+        <h1 style="color:#0984e3; font-weight: 900; font-size: 3.2rem; margin-bottom: 0.2rem; text-shadow: 2px 2px 6px rgba(0,0,0,0.1);">Welcome to Your Startup Hub</h1>
+        <p style="color:#636e72; font-size: 1.3rem; margin-top: 0; margin-bottom: 1.5rem; line-height: 1.6;">
+            A smart, easy-to-use platform to search startups, check health metrics, find events — all in one place.
+            Let our AI Startup assistant help you anytime 
+        </p>
+        <hr style="width:60px; border:3px solid #00cec9; margin: 20px auto 30px;">
+        <p style="color:#0984e3; font-weight: 600; font-size: 1rem; margin-top: 0;">
+            Developed by <span style="font-weight: 1000;">Team Falcon</span> 🦅
+        </p>
+    </div>""",
+    elem_id="header")
 
     with gr.Tab("1. Startup Company Search"):
         query = gr.Textbox(label="Search for Startup")
