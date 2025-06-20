@@ -9,12 +9,57 @@ import requests
 from bs4 import BeautifulSoup
 import threading
 import time
+import logging
+from functools import wraps, lru_cache
 from openai import OpenAI
+
+# Setup basic logging
+logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # API Keys
 SERPAPI_KEY = os.getenv("SERPAPI_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
+# Decorators
+
+def log_exceptions(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logging.error(f"Exception in {func.__name__}: {e}", exc_info=True)
+            return f"An error occurred in {func.__name__}: {e}"
+    return wrapper
+
+def validate_nonempty(func):
+    @wraps(func)
+    def wrapper(text):
+        if not text or not text.strip():
+            return "Input cannot be empty."
+        return func(text)
+    return wrapper
+
+def retry(times=3, delay=2):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(1, times + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    logging.error(f"Attempt {attempt} failed in {func.__name__}: {e}")
+                    if attempt == times:
+                        return f"Failed after {times} attempts: {e}"
+                    time.sleep(delay)
+        return wrapper
+    return decorator
+
+# Functions
+
+@log_exceptions
+@validate_nonempty
+@lru_cache(maxsize=128)
 def search_startup(query):
     try:
         from serpapi import GoogleSearch
@@ -48,10 +93,10 @@ def search_startup(query):
         result_text += "No results found or invalid API key."
     return result_text
 
-def startup_health_dashboard(startup):
-    if not startup.strip():
-        return "Please enter a valid startup name.", None
 
+@log_exceptions
+@validate_nonempty
+def startup_health_dashboard(startup):
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
     growth = [random.randint(1000, 5000)]
     for _ in range(5):
@@ -94,6 +139,10 @@ def startup_health_dashboard(startup):
                f"Community: {community}/5")
     return summary, img
 
+
+@log_exceptions
+@validate_nonempty
+@retry(times=3, delay=3)
 def event_finder(query):
     query = query.lower()
     events = []
@@ -148,6 +197,9 @@ def event_finder(query):
 
     return "\n".join(events) if events else "No matching events found."
 
+
+@log_exceptions
+@validate_nonempty
 def ai_search_startup(myprompt):
     if not GEMINI_API_KEY:
         return "Please configure your Gemini API key."
@@ -170,6 +222,9 @@ def ai_search_startup(myprompt):
     except Exception as e:
         return f"Error while calling AI assistant: {e}"
 
+
+@log_exceptions
+@validate_nonempty
 def seo_insights(domain):
     insights = {
         "domain": domain,
@@ -184,6 +239,9 @@ def seo_insights(domain):
             f"Backlinks: {insights['backlinks']}\n"
             f"Domain Authority: {insights['domain_authority']}/100")
 
+
+@log_exceptions
+@validate_nonempty
 def idea_validator(idea_text):
     if not GEMINI_API_KEY:
         return "Please configure your Gemini API key."
@@ -206,6 +264,9 @@ def idea_validator(idea_text):
     except Exception as e:
         return f"Error from Gemini API: {e}"
 
+
+@log_exceptions
+@validate_nonempty
 def recommend_tools(keywords):
     if not GEMINI_API_KEY:
         return "Please configure your Gemini API key."
@@ -228,8 +289,12 @@ def recommend_tools(keywords):
     except Exception as e:
         return f"Error from Gemini API: {e}"
 
+
+# Gradio UI Setup
+
 with gr.Blocks(theme=gr.themes.Soft(primary_hue="blue", secondary_hue="violet")) as demo:
     gr.Markdown("### 🚀 Welcome to Startup Hub by Team Falcon 🦅")
+
     with gr.Tab("1. Startup Company Search"):
         query = gr.Textbox(label="Search for Startup")
         btn = gr.Button("Search")
@@ -273,7 +338,8 @@ with gr.Blocks(theme=gr.themes.Soft(primary_hue="blue", secondary_hue="violet"))
         tools_out = gr.Textbox(label="Tools", lines=7)
         tools_btn.click(recommend_tools, inputs=[keyword], outputs=[tools_out])
 
-# ✅ Self-ping thread to keep Render app awake
+
+# Self-ping thread to keep Render app awake
 def keep_awake():
     while True:
         try:
@@ -281,9 +347,9 @@ def keep_awake():
             requests.get("https://startup-hub.onrender.com")
         except Exception as e:
             print("[ERROR] Ping failed:", e)
-        time.sleep(600)
+        time.sleep(600)  # Ping every 10 minutes
 
 threading.Thread(target=keep_awake, daemon=True).start()
 
-# ✅ Launch Gradio app
+# Launch Gradio app
 demo.launch(server_name="0.0.0.0", server_port=7860)
