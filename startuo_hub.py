@@ -7,12 +7,13 @@ from io import BytesIO
 from PIL import Image
 import requests
 from bs4 import BeautifulSoup
+import threading
+import time
+from openai import OpenAI
 
-
-
-SERPAPI_KEY = os.getenv("SERPAPI_KEY")           #Used for google search
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")           #used for gemini as ai startup assistent 
-
+# API Keys
+SERPAPI_KEY = os.getenv("SERPAPI_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 def search_startup(query):
     try:
@@ -20,17 +21,16 @@ def search_startup(query):
     except ImportError:
         return "SerpAPI not installed. Run: pip install google-search-results"
 
-    api_key = SERPAPI_KEY
-    if not api_key or api_key == "YOUR_API_KEY":
-        return (
-            "Please set your SerpAPI key as the SERPAPI_KEY variable at the top of the script to use this feature."
-        )
+    if not SERPAPI_KEY or SERPAPI_KEY == "YOUR_API_KEY":
+        return "Please set your SerpAPI key as the SERPAPI_KEY variable."
+
     params = {
         "engine": "google",
         "q": query,
-        "api_key": api_key,
+        "api_key": SERPAPI_KEY,
         "num": 5
     }
+
     try:
         search = GoogleSearch(params)
         results = search.get_dict()
@@ -98,7 +98,6 @@ def event_finder(query):
     query = query.lower()
     events = []
 
-    # Meetup
     try:
         url = 'https://www.meetup.com/find/events/'
         response = requests.get(url)
@@ -107,7 +106,6 @@ def event_finder(query):
             title = event.get_text(strip=True)
             if query in title.lower():
                 events.append(f"[Meetup] {title}")
-
         for event in soup.find_all('h2'):
             title = event.get_text(strip=True)
             if query in title.lower():
@@ -115,7 +113,6 @@ def event_finder(query):
     except:
         pass
 
-    # Techmeme
     try:
         url = 'https://www.techmeme.com/events'
         response = requests.get(url)
@@ -127,7 +124,6 @@ def event_finder(query):
     except:
         pass
 
-    # Microsoft
     try:
         url = 'https://events.microsoft.com/en-us/'
         response = requests.get(url)
@@ -139,7 +135,6 @@ def event_finder(query):
     except:
         pass
 
-    # Google
     try:
         url = 'https://developers.google.com/events'
         response = requests.get(url)
@@ -152,8 +147,6 @@ def event_finder(query):
         pass
 
     return "\n".join(events) if events else "No matching events found."
-
-from openai import OpenAI
 
 def ai_search_startup(myprompt):
     if not GEMINI_API_KEY:
@@ -185,12 +178,11 @@ def seo_insights(domain):
         "backlinks": random.randint(100, 5000),
         "domain_authority": random.randint(10, 90)
     }
-    text = (f"SEO Insights for {domain}:\n"
+    return (f"SEO Insights for {domain}:\n"
             f"Monthly Visits: {insights['monthly_visits']}\n"
             f"Bounce Rate: {insights['bounce_rate']}%\n"
             f"Backlinks: {insights['backlinks']}\n"
             f"Domain Authority: {insights['domain_authority']}/100")
-    return text
 
 def idea_validator(idea_text):
     if not GEMINI_API_KEY:
@@ -213,13 +205,6 @@ def idea_validator(idea_text):
         return response.choices[0].message.content
     except Exception as e:
         return f"Error from Gemini API: {e}"
-
-TOOLS = {
-    "marketing": ["HubSpot", "Mailchimp", "Google Ads"],
-    "development": ["GitHub", "GitLab", "Jira"],
-    "design": ["Figma", "Adobe XD", "Canva"],
-    "analytics": ["Google Analytics", "Mixpanel", "Tableau"],
-}
 
 def recommend_tools(keywords):
     if not GEMINI_API_KEY:
@@ -244,74 +229,61 @@ def recommend_tools(keywords):
         return f"Error from Gemini API: {e}"
 
 with gr.Blocks(theme=gr.themes.Soft(primary_hue="blue", secondary_hue="violet")) as demo:
-    gr.Markdown("""<div style="text-align:center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width:1000px; margin:auto;">
-        <h1 style="color:#0984e3; font-weight: 900; font-size: 3.2rem; margin-bottom: 0.2rem; text-shadow: 2px 2px 6px rgba(0,0,0,0.1);">Welcome to Your Startup Hub</h1>
-        <p style="color:#636e72; font-size: 1.3rem; margin-top: 0; margin-bottom: 1.5rem; line-height: 1.6;">
-            A smart, easy-to-use platform to search startups, check health metrics, find events — all in one place.
-            Let our AI Startup assistant help you anytime 
-        </p>
-        <hr style="width:60px; border:3px solid #00cec9; margin: 20px auto 30px;">
-        <p style="color:#0984e3; font-weight: 600; font-size: 1rem; margin-top: 0;">
-            Developed by <span style="font-weight: 1000;">Team Falcon</span> 🦅
-        </p>
-    </div>""",
-    elem_id="header")
-
-    gr.Markdown("Built with Gemini AI • Serp api key • Web Scrap • Gradio UI • BeautifulSoup")
-
+    gr.Markdown("### 🚀 Welcome to Startup Hub by Team Falcon 🦅")
     with gr.Tab("1. Startup Company Search"):
-        gr.Markdown("### Search for any startup or topic to see Google results ")
-        search_query = gr.Textbox(label="Search for Startup", placeholder="e.g. fintech startup India")
-        search_btn = gr.Button("Search")
-        search_output = gr.Textbox(label="Search Results", lines=10)
-        search_btn.click(search_startup, inputs=[search_query], outputs=[search_output])
+        query = gr.Textbox(label="Search for Startup")
+        btn = gr.Button("Search")
+        output = gr.Textbox(label="Results", lines=10)
+        btn.click(search_startup, inputs=[query], outputs=[output])
 
     with gr.Tab("2. Startup Health Checkup & Growth"):
-        gr.Markdown("### Get a simulated health checkup and growth dashboard for any startup.")
-        health_name = gr.Textbox(label="Enter Startup Name", placeholder="e.g. MyStartup")
-        health_btn = gr.Button("Run Health Checkup")
-        health_summary = gr.Textbox(label="Health Summary", lines=5)
-        health_plot = gr.Image(label="Health Dashboard", format="png")
-        health_btn.click(startup_health_dashboard, inputs=[health_name], outputs=[health_summary, health_plot])
+        name = gr.Textbox(label="Startup Name")
+        run_btn = gr.Button("Run Checkup")
+        summary = gr.Textbox(label="Summary", lines=5)
+        chart = gr.Image(label="Health Chart")
+        run_btn.click(startup_health_dashboard, inputs=[name], outputs=[summary, chart])
 
     with gr.Tab("3. Event Finder"):
-        gr.Markdown("### Find upcoming events from real web sources: Microsoft, Google, Meetup, and Techmeme")
-        event_query = gr.Textbox(label="Find Events For", placeholder="e.g. Microsoft, AI,Google,meetup,techmeme")
+        event_input = gr.Textbox(label="Topic (e.g. AI, Microsoft)")
         event_btn = gr.Button("Find Events")
         event_output = gr.Textbox(label="Event Results", lines=10)
-        event_btn.click(event_finder, inputs=[event_query], outputs=[event_output])
+        event_btn.click(event_finder, inputs=[event_input], outputs=[event_output])
 
     with gr.Tab("4. AI Assistant"):
-        gr.Markdown("""
-        ### AI Startup Search Assistant  
-        Search any startup or topic related with it
-        <span style='color:gray'><i>Requires <code> Startup </code> </i></span>
-        """)
-        with gr.Row():
-            with gr.Column():
-                user_query = gr.Textbox(label="Search Query", placeholder="e.g. fintech startup India")
-                search_btn_ai = gr.Button("Search", variant="primary")
-            with gr.Column():
-                results = gr.Markdown(label="Results")
-        search_btn_ai.click(ai_search_startup, inputs=[user_query], outputs=[results])
+        prompt = gr.Textbox(label="Ask AI Assistant")
+        ask_btn = gr.Button("Ask")
+        answer = gr.Markdown()
+        ask_btn.click(ai_search_startup, inputs=[prompt], outputs=[answer])
 
     with gr.Tab("5. Traffic & SEO Insights"):
-        domain_input = gr.Textbox(label="Enter Domain", placeholder="e.g. fintechx.com")
-        seo_btn = gr.Button("Get SEO Insights")
-        seo_output = gr.Textbox(label="SEO Summary", lines=7)
-        seo_btn.click(seo_insights, inputs=domain_input, outputs=seo_output)
+        domain = gr.Textbox(label="Enter Domain")
+        seo_btn = gr.Button("Get SEO")
+        seo_out = gr.Textbox(label="SEO Report", lines=7)
+        seo_btn.click(seo_insights, inputs=[domain], outputs=[seo_out])
 
     with gr.Tab("6. Startup Idea Validator"):
-        idea_input = gr.Textbox(label="Describe Your Startup Idea")
-        idea_btn = gr.Button("Validate Idea")
-        idea_output = gr.Textbox(label="Validation Report", lines=10)
-        idea_btn.click(idea_validator, inputs=idea_input, outputs=idea_output)
+        idea = gr.Textbox(label="Your Startup Idea")
+        idea_btn = gr.Button("Validate")
+        idea_out = gr.Textbox(label="Validation", lines=10)
+        idea_btn.click(idea_validator, inputs=[idea], outputs=[idea_out])
 
     with gr.Tab("7. Startup Tool Recommender"):
-        tool_keywords = gr.Textbox(label="Enter keywords (e.g., marketing, design)")
-        tool_btn = gr.Button("Recommend Tools")
-        tool_output = gr.Textbox(label="Tool Recommendations", lines=7)
-        tool_btn.click(recommend_tools, inputs=tool_keywords, outputs=tool_output)
+        keyword = gr.Textbox(label="Keywords")
+        tools_btn = gr.Button("Get Tools")
+        tools_out = gr.Textbox(label="Tools", lines=7)
+        tools_btn.click(recommend_tools, inputs=[keyword], outputs=[tools_out])
 
+# ✅ Self-ping thread to keep Render app awake
+def keep_awake():
+    while True:
+        try:
+            print("[PING] Keeping the app awake...")
+            requests.get("https://startup-hub.onrender.com")
+        except Exception as e:
+            print("[ERROR] Ping failed:", e)
+        time.sleep(600)
+
+threading.Thread(target=keep_awake, daemon=True).start()
+
+# ✅ Launch Gradio app
 demo.launch(server_name="0.0.0.0", server_port=7860)
-
