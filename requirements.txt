@@ -1,4 +1,4 @@
-gradio
+gradio==4.27.0
 matplotlib
 numpy
 Pillow
@@ -6,4 +6,3 @@ requests
 beautifulsoup4
 google-search-results
 openai
-
