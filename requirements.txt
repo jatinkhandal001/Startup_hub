@@ -6,3 +6,4 @@ requests
 beautifulsoup4
 google-search-results
 openai
+pyaudio
