@@ -255,9 +255,10 @@ def idea_validator(idea_text):
     ]
     try:
         response = client.chat.completions.create(
-            model="gemini-1.5-flash",
+            model="gemini-1.0-pro",
             messages=messages
         )
+
         if not response.choices or not hasattr(response.choices[0], "message"):
             return "No response from Gemini API."
         return response.choices[0].message.content
@@ -364,3 +365,4 @@ threading.Thread(target=keep_awake, daemon=True).start()
 
 # Launch Gradio app
 demo.launch(server_name="0.0.0.0", server_port=7860)
+
